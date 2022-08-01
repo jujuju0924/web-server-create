@@ -2,6 +2,7 @@ import os
 import re
 import textwrap
 import traceback
+import urllib.parse
 from datetime import datetime
 from pprint import pformat
 from socket import socket
@@ -16,7 +17,7 @@ class WorkerThread(Thread):
 
     # 拡張子とMIME Typeの対応
     MIME_TYPES = {
-        "html": "text/html",
+        "html": "text/html; charset=UTF-8",
         "css": "text/css",
         "png": "image/png",
         "jpg": "image/jpg",
@@ -64,7 +65,7 @@ class WorkerThread(Thread):
               response_body = textwrap.dedent(html).encode()
 
               # Content_Typeを指定
-              content_type = "text/html"
+              content_type = "text/html; charset=UTF-8"
 
               # レスポンスラインを生成
               response_line = "HTTP/1.1 200 OK\r\n"
@@ -88,10 +89,34 @@ class WorkerThread(Thread):
                 response_body = textwrap.dedent(html).encode()
 
                 # Content-Typeを指定
-                content_type = "text/html"
+                content_type = "text/html; charset=UTF-8"
 
                 # レスポンスラインを生成
                 response_line = "HTTP/1.1 200 OK\r\n"
+
+            elif path == "/parameters":
+                if method == "GET":
+                  response_body = b"<html><body><h1>405 Method Not Allowed</h1></body></html>"
+                  content_type = "text/html; charset=UTF-8"
+                  response_line = "HTTP/1.1 405 Method Not Allowed\r\n"
+
+                elif method == "POST":
+                  post_params = urllib.parse.parse_qs(request_body.decode())
+                  html = f"""\
+                    <html>
+                    <body>
+                        <h1>Parameters:</h1>
+                        <pre>{pformat(post_params)}</pre>
+                    </body>
+                    </html>
+                  """
+                  response_body = textwrap.dedent(html).encode()
+
+                  #Content-Typeを指定
+                  content_type = "text/html; charset=UTF-8"
+
+                  #レスポンスラインを生成
+                  response_line = "HTTP/1.1 200 OK\r\n"
 
             #pathがそれ以外の時は、静的ファイルからレスポンスを生成する
             else:
@@ -109,7 +134,7 @@ class WorkerThread(Thread):
                   traceback.print_exc()
 
                   response_body = b"<html><body><h1>404 Not Found</h1></body></html>"
-                  content_type = "text/html"
+                  content_type = "text/html; charset=UTF-8"
                   response_line = "HTTP/1.1 404 Not Found\r\n"
 
             # レスポンスヘッダーを生成
